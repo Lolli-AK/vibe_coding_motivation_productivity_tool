@@ -73,6 +73,7 @@ class FocusRecapApp {
   }
 
   async createMainWindow() {
+    console.log('Creating main window...');
     this.mainWindow = new BrowserWindow({
       width: 800,
       height: 600,
@@ -82,10 +83,12 @@ class FocusRecapApp {
         preload: path.join(__dirname, 'preload.js')
       },
       titleBarStyle: 'hiddenInset',
-      show: false
+      show: true
     });
 
+    console.log('Loading renderer file...');
     await this.mainWindow.loadFile('src/renderer/index.html');
+    console.log('Renderer file loaded successfully');
     
     this.mainWindow.once('ready-to-show', () => {
       this.mainWindow.show();
@@ -385,11 +388,11 @@ class FocusRecapApp {
       const prompt = this.buildAIPrompt(screenshotData);
       
       const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: process.env.AI_MODEL || 'gpt-3.5-turbo',
+        model: process.env.AI_MODEL || 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'You are a productivity coach analyzing work sessions. Provide concise, motivational feedback based on screenshot data.'
+            content: 'You are an energetic productivity coach and motivational speaker who analyzes work sessions through screenshot data. You provide structured, actionable feedback that helps users stay focused and achieve their daily goals. Always be encouraging, specific, and reference actual activities from the data provided.'
           },
           {
             role: 'user',
@@ -427,38 +430,101 @@ class FocusRecapApp {
       `Time: ${data.timestamp}\nText: ${data.ocrText}`
     ).join('\n\n');
 
-    return `Analyze this 5-minute work session and provide a motivational summary:
+    // Calculate dynamic values for the prompt
+    const checklistLength = checklist.length;
+    const sessionActivity = screenshotData.length;
+    const itemsCount = Math.max(2, Math.min(5, Math.max(checklistLength, Math.floor(sessionActivity / 3))));
+
+    return `Analyze this ${this.userSettings.recordingDuration}-minute work session and provide a motivational summary:
 
 Screenshot data:
 ${ocrTexts}
 ${checklistText}
 
-Please provide:
-1. What the user accomplished (2-3 sentences)
-2. What went well (positive reinforcement)
-3. What to improve (1-2 actionable suggestions)
-4. A motivational closing message
+Format your response EXACTLY like this structure (use these exact headings):
 
-Keep it concise, encouraging, and actionable. Focus on productivity patterns and goal alignment.`;
+**Accomplishments:**
+[2-3 sentences describing what the user actually accomplished during this session, based on the screenshot data]
+
+**What Went Well:**
+[Provide ${itemsCount} specific positive points, each starting with an emoji (✅, 🎯, 💪, 🔥, ⭐, 🚀, 💯, 🎉, 👏, 🌟). Reference actual activities from the screenshots and be specific about what went well.]
+
+**Areas to Improve:**
+[Provide ${itemsCount} actionable suggestions, each starting with an emoji (🔍, ✏️, ⏱️, 📝, 🎯, 💡, 🔄, 📊, ⚡, 🎪). Base these on checklist items or productivity patterns you observe. Make them specific and actionable.]
+
+**Keep Going!** 
+[End with an energetic, GenZ-style motivational message using phrases like "let's go!", "you're crushing it!", "no cap", "periodt", "slay queen/king", etc. Make it personal and encouraging]
+
+**Optional Boss Email Summary:**
+[If the user accomplished significant work, provide a professional 2-3 sentence summary suitable for emailing to a boss or manager. Focus on key achievements, productivity metrics, and completed tasks. Use professional, concise language. If the session was not particularly productive, skip this section or mention it briefly.]
+
+IMPORTANT FORMATTING RULES:
+- Use the exact headings shown above (no numbers, no ###)
+- Show exactly ${itemsCount} items in each middle section (based on checklist length: ${checklistLength} items and session activity: ${sessionActivity} screenshots)
+- Use bullet points with emojis for the middle sections
+- Keep each section concise but specific
+- Reference actual activities from the screenshot data
+- Make suggestions actionable and checklist-focused
+- End with high energy and personality
+- If user has many checklist items, provide more detailed feedback. If fewer items, focus on quality over quantity
+- Boss email should be professional, concise, and highlight key accomplishments only if significant work was done.`;
   }
 
   generateMockSummary(screenshotData) {
     const activities = this.extractActivities(screenshotData);
     const checklist = this.userSettings.checklist || [];
+    const itemsCount = Math.max(2, Math.min(5, Math.max(checklist.length, Math.floor(screenshotData.length / 3))));
     
-    let summary = `Based on your 5-minute work session, here's what I observed:\n\n`;
+    let summary = `**Accomplishments:**\n`;
+    summary += `You successfully engaged in ${activities} during this ${this.userSettings.recordingDuration}-minute session. Your consistent focus and productivity demonstrate strong work habits and dedication to your goals.\n\n`;
     
-    summary += `What you did: ${activities}\n\n`;
-    
-    summary += `What went well: You maintained focus on productive activities and efficiently managed your workflow.\n\n`;
-    
-    if (checklist.length > 0) {
-      summary += `What to improve: Consider reviewing your daily goals and ensuring each task aligns with your priorities.\n\n`;
-    } else {
-      summary += `What to improve: Consider setting specific daily goals to better track your progress and maintain motivation.\n\n`;
+    summary += `**What Went Well:**\n`;
+    const positiveEmojis = ['✅', '🎯', '💪', '🔥', '⭐', '🚀', '💯', '🎉', '👏', '🌟'];
+    for (let i = 0; i < itemsCount; i++) {
+      const emoji = positiveEmojis[i % positiveEmojis.length];
+      if (i === 0) {
+        summary += `${emoji} Maintained consistent focus throughout the session\n`;
+      } else if (i === 1) {
+        summary += `${emoji} Efficiently managed your workflow and time\n`;
+      } else if (i === 2) {
+        summary += `${emoji} Stayed engaged with productive activities\n`;
+      } else if (i === 3) {
+        summary += `${emoji} Demonstrated strong work discipline\n`;
+      } else {
+        summary += `${emoji} Showed excellent productivity patterns\n`;
+      }
     }
+    summary += `\n`;
     
-    summary += `Keep up the great work! Every focused moment brings you closer to your goals.`;
+    summary += `**Areas to Improve:**\n`;
+    const improvementEmojis = ['🔍', '✏️', '⏱️', '📝', '🎯', '💡', '🔄', '📊', '⚡', '🎪'];
+    for (let i = 0; i < itemsCount; i++) {
+      const emoji = improvementEmojis[i % improvementEmojis.length];
+      if (i === 0) {
+        if (checklist.length > 0) {
+          summary += `${emoji} Review your daily goals and ensure each task aligns with priorities\n`;
+        } else {
+          summary += `${emoji} Consider setting specific daily goals to track progress better\n`;
+        }
+      } else if (i === 1) {
+        summary += `${emoji} Take short breaks every 25-30 minutes to maintain peak focus\n`;
+      } else if (i === 2) {
+        summary += `${emoji} Track time spent on different activities for better insights\n`;
+      } else if (i === 3) {
+        summary += `${emoji} Prioritize tasks based on importance and urgency\n`;
+      } else {
+        summary += `${emoji} Consider using productivity techniques like Pomodoro method\n`;
+      }
+    }
+    summary += `\n`;
+    
+    summary += `**Keep Going!**\n`;
+    summary += `You're absolutely crushing it! 🔥 Your dedication to staying focused and productive is seriously impressive - no cap! Keep this energy going and you'll achieve all your goals, periodt! Let's go! 💪✨\n\n`;
+    
+    if (activities.includes('coding') || activities.includes('document work')) {
+      summary += `**Optional Boss Email Summary:**\n`;
+      summary += `Completed productive work session focusing on ${activities}. Maintained consistent focus and demonstrated strong work discipline throughout the ${this.userSettings.recordingDuration}-minute period.`;
+    }
     
     return {
       text: summary,

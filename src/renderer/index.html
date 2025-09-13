@@ -157,6 +157,17 @@
             white-space: pre-line;
         }
 
+        .summary-text strong {
+            color: #667eea;
+            font-size: 1.1em;
+            display: block;
+            margin: 15px 0 8px 0;
+        }
+
+        .summary-text strong:first-child {
+            margin-top: 0;
+        }
+
         .hidden {
             display: none;
         }
@@ -329,7 +340,31 @@
             const container = document.getElementById('summaryContainer');
             const textElement = document.getElementById('summaryText');
             
-            textElement.textContent = text;
+            // Convert markdown-style formatting to HTML
+            const htmlText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold headers
+                .replace(/\n/g, '<br>') // Line breaks
+                .replace(/✅/g, '✅')
+                .replace(/🎯/g, '🎯')
+                .replace(/💪/g, '💪')
+                .replace(/🔥/g, '🔥')
+                .replace(/⭐/g, '⭐')
+                .replace(/🚀/g, '🚀')
+                .replace(/💯/g, '💯')
+                .replace(/🎉/g, '🎉')
+                .replace(/👏/g, '👏')
+                .replace(/🌟/g, '🌟')
+                .replace(/🔍/g, '🔍')
+                .replace(/✏️/g, '✏️')
+                .replace(/⏱️/g, '⏱️')
+                .replace(/📝/g, '📝')
+                .replace(/💡/g, '💡')
+                .replace(/🔄/g, '🔄')
+                .replace(/📊/g, '📊')
+                .replace(/⚡/g, '⚡')
+                .replace(/🎪/g, '🎪');
+            
+            textElement.innerHTML = htmlText;
             container.classList.add('show');
         }
 

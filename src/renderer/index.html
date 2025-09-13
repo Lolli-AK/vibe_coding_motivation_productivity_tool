@@ -128,7 +128,7 @@
             font-weight: 600;
         }
 
-        .status.recording {
+        .status.monitoring {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
@@ -161,6 +161,28 @@
             display: none;
         }
 
+        .countdown {
+            text-align: center;
+            padding: 15px;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .countdown-text {
+            font-size: 14px;
+            color: #1565c0;
+            margin-bottom: 5px;
+        }
+
+        .countdown-timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1565c0;
+            font-family: 'Courier New', monospace;
+        }
+
         .privacy-notice {
             background: #e3f2fd;
             border: 1px solid #bbdefb;
@@ -189,109 +211,186 @@
             Screenshots are stored locally and automatically deleted after analysis. No data is sent to external servers without your consent.
         </div>
 
-        <form id="settingsForm">
-            <div class="form-group">
-                <label for="email">Email Address (Optional)</label>
-                <input type="email" id="email" placeholder="your@email.com" />
-                <small style="color: #666; font-size: 14px;">Leave empty to view summaries in-app only</small>
+        <div class="form-group">
+            <label for="recordingDuration">Monitoring Duration</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="number" id="recordingMinutes" min="0" max="60" value="5" style="flex: 1;" />
+                <span>minutes</span>
+                <input type="number" id="recordingSeconds" min="0" max="59" value="20" style="flex: 1;" />
+                <span>seconds</span>
             </div>
-
-            <div class="form-group">
-                <label for="recordingDuration">Recording Duration (minutes)</label>
-                <input type="number" id="recordingDuration" min="1" max="60" value="5" />
-            </div>
-
-            <div class="form-group">
-                <label for="checklist">Daily Goals/Checklist (Optional)</label>
-                <textarea id="checklist" placeholder="Enter your daily goals or tasks, one per line..."></textarea>
-                <small style="color: #666; font-size: 14px;">AI will reference these when analyzing your work</small>
-            </div>
-
-            <button type="submit" class="btn" id="saveBtn">Save Settings</button>
-        </form>
-
-        <div class="status stopped" id="status">
-            Ready to start recording
+            <small style="color: #666; font-size: 14px;">Total duration: <span id="totalDuration">5:20</span></small>
         </div>
 
-        <button class="btn" id="startBtn">Start Recording</button>
-        <button class="btn btn-secondary hidden" id="stopBtn">Stop Recording</button>
+        <div class="form-group">
+            <label for="checklist">Daily Goals/Checklist (Optional)</label>
+            <textarea id="checklist" placeholder="Enter your daily goals or tasks, one per line..."></textarea>
+            <small style="color: #666; font-size: 14px;">AI will reference these when analyzing your work</small>
+        </div>
+
+        <div class="status stopped" id="status">
+            Ready to start monitoring
+        </div>
+        
+        <div class="countdown" id="countdown" style="display: none;">
+            <div class="countdown-text">Monitoring will stop in:</div>
+            <div class="countdown-timer" id="countdownTimer">5:00</div>
+        </div>
+
+        <button class="btn" id="startBtn">Start Monitoring</button>
+        <button class="btn btn-secondary hidden" id="stopBtn">Stop Monitoring</button>
         <button class="btn btn-secondary hidden" id="summaryBtn">Generate Summary Now</button>
 
         <div class="summary-container" id="summaryContainer">
             <h3>Latest Summary</h3>
             <div class="summary-text" id="summaryText"></div>
+            <button class="btn btn-secondary" id="sendEmailBtn" style="margin-top: 15px;">📧 Send In Email</button>
         </div>
     </div>
 
     <script>
-        let isRecording = false;
+        let isMonitoring = false;
         let settings = {};
+        let countdownInterval = null;
+        let remainingTime = 0;
+
+        // Listen for automatically generated summaries
+        window.electronAPI.onSummaryGenerated((summary) => {
+            showSummary(summary.text);
+            showNotification('Summary generated automatically!');
+        });
 
         // Load settings on page load
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 settings = await window.electronAPI.getSettings();
-                document.getElementById('email').value = settings.email || '';
-                document.getElementById('recordingDuration').value = settings.recordingDuration || 5;
+                console.log('Loaded settings:', settings);
+                
+                // Handle both minutes and seconds
+                const totalSeconds = (settings.recordingDuration || 320); // 5 minutes 20 seconds default
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                
+                console.log('Setting form values - minutes:', minutes, 'seconds:', seconds);
+                document.getElementById('recordingMinutes').value = minutes;
+                document.getElementById('recordingSeconds').value = seconds;
+                updateTotalDuration();
+                
                 document.getElementById('checklist').value = settings.checklist ? settings.checklist.join('\n') : '';
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
         });
 
-        // Save settings
-        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Update total duration display
+        function updateTotalDuration() {
+            const minutes = parseInt(document.getElementById('recordingMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('recordingSeconds').value) || 0;
+            const totalSeconds = minutes * 60 + seconds;
+            const displayMinutes = Math.floor(totalSeconds / 60);
+            const displaySeconds = totalSeconds % 60;
             
-            const checklistText = document.getElementById('checklist').value;
-            const checklist = checklistText ? checklistText.split('\n').filter(item => item.trim()) : [];
-            
-            settings = {
-                email: document.getElementById('email').value,
-                recordingDuration: parseInt(document.getElementById('recordingDuration').value),
-                checklist: checklist
-            };
+            document.getElementById('totalDuration').textContent = 
+                `${displayMinutes}:${displaySeconds.toString().padStart(2, '0')}`;
+        }
 
-            try {
-                await window.electronAPI.saveSettings(settings);
-                showNotification('Settings saved successfully!');
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                showNotification('Error saving settings', 'error');
-            }
-        });
+        // Add event listeners for duration inputs
+        document.getElementById('recordingMinutes').addEventListener('input', updateTotalDuration);
+        document.getElementById('recordingSeconds').addEventListener('input', updateTotalDuration);
 
-        // Start recording
+        // Start monitoring
         document.getElementById('startBtn').addEventListener('click', async () => {
             try {
+                // Auto-save settings before starting monitoring
+                const checklistText = document.getElementById('checklist').value;
+                const checklist = checklistText ? checklistText.split('\n').filter(item => item.trim()) : [];
+                
+                // Calculate total duration in seconds
+                const minutes = parseInt(document.getElementById('recordingMinutes').value) || 0;
+                const seconds = parseInt(document.getElementById('recordingSeconds').value) || 0;
+                const totalSeconds = minutes * 60 + seconds;
+                
+                console.log('Auto-saving settings before monitoring - minutes:', minutes, 'seconds:', seconds, 'totalSeconds:', totalSeconds);
+                
+                settings = {
+                    recordingDuration: totalSeconds, // Store as total seconds
+                    checklist: checklist
+                };
+
+                // Save settings automatically
+                await window.electronAPI.saveSettings(settings);
+                console.log('Settings auto-saved successfully');
+                
+                // Start monitoring
                 await window.electronAPI.startRecording();
-                isRecording = true;
+                isMonitoring = true;
+                remainingTime = settings.recordingDuration; // Already in seconds
+                startCountdown();
                 updateUI();
-                showNotification('Recording started! Screenshots will be captured every 20 seconds.');
+                showNotification('Monitoring started! Screenshots will be captured every 20 seconds.');
             } catch (error) {
-                console.error('Error starting recording:', error);
-                showNotification('Error starting recording', 'error');
+                console.error('Error starting monitoring:', error);
+                showNotification('Error starting monitoring', 'error');
             }
         });
 
-        // Stop recording
+        // Stop monitoring
         document.getElementById('stopBtn').addEventListener('click', async () => {
             try {
                 await window.electronAPI.stopRecording();
-                isRecording = false;
+                isMonitoring = false;
+                stopCountdown();
                 updateUI();
-                showNotification('Recording stopped.');
+                showNotification('Monitoring stopped.');
             } catch (error) {
-                console.error('Error stopping recording:', error);
-                showNotification('Error stopping recording', 'error');
+                console.error('Error stopping monitoring:', error);
+                showNotification('Error stopping monitoring', 'error');
             }
         });
+
+        function startCountdown() {
+            const countdownElement = document.getElementById('countdown');
+            const timerElement = document.getElementById('countdownTimer');
+            
+            countdownElement.style.display = 'block';
+            
+            countdownInterval = setInterval(() => {
+                remainingTime--;
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (remainingTime <= 0) {
+                    stopCountdown();
+                    countdownElement.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            const countdownElement = document.getElementById('countdown');
+            countdownElement.style.display = 'none';
+        }
 
         // Generate summary
         document.getElementById('summaryBtn').addEventListener('click', async () => {
             try {
+                // Show loading state
+                const summaryBtn = document.getElementById('summaryBtn');
+                const originalText = summaryBtn.textContent;
+                summaryBtn.textContent = '⏳ Generating Summary...';
+                summaryBtn.disabled = true;
+                
                 const summary = await window.electronAPI.generateSummary();
+                
+                // Restore button state
+                summaryBtn.textContent = originalText;
+                summaryBtn.disabled = false;
+                
                 if (summary.error) {
                     showNotification(summary.error, 'error');
                 } else {
@@ -299,8 +398,29 @@
                     showNotification('Summary generated successfully!');
                 }
             } catch (error) {
+                // Restore button state on error
+                const summaryBtn = document.getElementById('summaryBtn');
+                summaryBtn.textContent = 'Generate Summary Now';
+                summaryBtn.disabled = false;
+                
                 console.error('Error generating summary:', error);
                 showNotification('Error generating summary', 'error');
+            }
+        });
+
+        // Send email
+        document.getElementById('sendEmailBtn').addEventListener('click', async () => {
+            try {
+                const summary = await window.electronAPI.generateSummary();
+                if (summary.error) {
+                    showNotification(summary.error, 'error');
+                } else {
+                    await window.electronAPI.sendEmailSummary(summary);
+                    showNotification('Email client opened with summary!');
+                }
+            } catch (error) {
+                console.error('Error sending email:', error);
+                showNotification('Error opening email client', 'error');
             }
         });
 
@@ -310,14 +430,14 @@
             const stopBtn = document.getElementById('stopBtn');
             const summaryBtn = document.getElementById('summaryBtn');
 
-            if (isRecording) {
-                status.textContent = 'Recording in progress...';
-                status.className = 'status recording';
+            if (isMonitoring) {
+                status.textContent = 'Monitoring in progress...';
+                status.className = 'status monitoring';
                 startBtn.classList.add('hidden');
                 stopBtn.classList.remove('hidden');
                 summaryBtn.classList.remove('hidden');
             } else {
-                status.textContent = 'Ready to start recording';
+                status.textContent = 'Ready to start monitoring';
                 status.className = 'status stopped';
                 startBtn.classList.remove('hidden');
                 stopBtn.classList.add('hidden');

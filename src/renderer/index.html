@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusRecap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="email"], input[type="number"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="email"]:focus, input[type="number"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e1e5e9;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .status.recording {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.stopped {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .summary-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .summary-container.show {
+            display: block;
+        }
+
+        .summary-text {
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .privacy-notice {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        .privacy-notice strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎯 FocusRecap</div>
+            <div class="subtitle">AI-powered productivity tracking</div>
+        </div>
+
+        <div class="privacy-notice">
+            <strong>🔒 Privacy First</strong>
+            Screenshots are stored locally and automatically deleted after analysis. No data is sent to external servers without your consent.
+        </div>
+
+        <form id="settingsForm">
+            <div class="form-group">
+                <label for="email">Email Address (Optional)</label>
+                <input type="email" id="email" placeholder="your@email.com" />
+                <small style="color: #666; font-size: 14px;">Leave empty to view summaries in-app only</small>
+            </div>
+
+            <div class="form-group">
+                <label for="recordingDuration">Recording Duration (minutes)</label>
+                <input type="number" id="recordingDuration" min="1" max="60" value="5" />
+            </div>
+
+            <div class="form-group">
+                <label for="checklist">Daily Goals/Checklist (Optional)</label>
+                <textarea id="checklist" placeholder="Enter your daily goals or tasks, one per line..."></textarea>
+                <small style="color: #666; font-size: 14px;">AI will reference these when analyzing your work</small>
+            </div>
+
+            <button type="submit" class="btn" id="saveBtn">Save Settings</button>
+        </form>
+
+        <div class="status stopped" id="status">
+            Ready to start recording
+        </div>
+
+        <button class="btn" id="startBtn">Start Recording</button>
+        <button class="btn btn-secondary hidden" id="stopBtn">Stop Recording</button>
+        <button class="btn btn-secondary hidden" id="summaryBtn">Generate Summary Now</button>
+
+        <div class="summary-container" id="summaryContainer">
+            <h3>Latest Summary</h3>
+            <div class="summary-text" id="summaryText"></div>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let settings = {};
+
+        // Load settings on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                settings = await window.electronAPI.getSettings();
+                document.getElementById('email').value = settings.email || '';
+                document.getElementById('recordingDuration').value = settings.recordingDuration || 5;
+                document.getElementById('checklist').value = settings.checklist ? settings.checklist.join('\n') : '';
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        });
+
+        // Save settings
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const checklistText = document.getElementById('checklist').value;
+            const checklist = checklistText ? checklistText.split('\n').filter(item => item.trim()) : [];
+            
+            settings = {
+                email: document.getElementById('email').value,
+                recordingDuration: parseInt(document.getElementById('recordingDuration').value),
+                checklist: checklist
+            };
+
+            try {
+                await window.electronAPI.saveSettings(settings);
+                showNotification('Settings saved successfully!');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showNotification('Error saving settings', 'error');
+            }
+        });
+
+        // Start recording
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            try {
+                await window.electronAPI.startRecording();
+                isRecording = true;
+                updateUI();
+                showNotification('Recording started! Screenshots will be captured every 20 seconds.');
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                showNotification('Error starting recording', 'error');
+            }
+        });
+
+        // Stop recording
+        document.getElementById('stopBtn').addEventListener('click', async () => {
+            try {
+                await window.electronAPI.stopRecording();
+                isRecording = false;
+                updateUI();
+                showNotification('Recording stopped.');
+            } catch (error) {
+                console.error('Error stopping recording:', error);
+                showNotification('Error stopping recording', 'error');
+            }
+        });
+
+        // Generate summary
+        document.getElementById('summaryBtn').addEventListener('click', async () => {
+            try {
+                const summary = await window.electronAPI.generateSummary();
+                if (summary.error) {
+                    showNotification(summary.error, 'error');
+                } else {
+                    showSummary(summary.text);
+                    showNotification('Summary generated successfully!');
+                }
+            } catch (error) {
+                console.error('Error generating summary:', error);
+                showNotification('Error generating summary', 'error');
+            }
+        });
+
+        function updateUI() {
+            const status = document.getElementById('status');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const summaryBtn = document.getElementById('summaryBtn');
+
+            if (isRecording) {
+                status.textContent = 'Recording in progress...';
+                status.className = 'status recording';
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                summaryBtn.classList.remove('hidden');
+            } else {
+                status.textContent = 'Ready to start recording';
+                status.className = 'status stopped';
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                summaryBtn.classList.add('hidden');
+            }
+        }
+
+        function showSummary(text) {
+            const container = document.getElementById('summaryContainer');
+            const textElement = document.getElementById('summaryText');
+            
+            textElement.textContent = text;
+            container.classList.add('show');
+        }
+
+        function showNotification(message, type = 'success') {
+            // Simple notification - in a real app, you'd want a proper notification system
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#f8d7da' : '#d4edda'};
+                color: ${type === 'error' ? '#721c24' : '#155724'};
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                font-weight: 600;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+

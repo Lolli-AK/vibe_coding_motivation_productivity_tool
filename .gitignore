@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Screenshots (for privacy)
+data/screenshots/
+*.png
+
+# Database files
+*.db
+src/data/
+
+# OCR training data
+eng.traineddata
+
+# Temporary files
+*.tmp
+*.temp

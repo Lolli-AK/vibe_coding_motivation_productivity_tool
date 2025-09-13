@@ -19,6 +19,71 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .drag-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: #000;
+            -webkit-app-region: drag;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-bottom: 1px solid #333;
+        }
+
+        .drag-bar-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .window-controls {
+            position: absolute;
+            left: 10px;
+            display: flex;
+            gap: 8px;
+            -webkit-app-region: no-drag;
+        }
+
+        .window-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .window-control:hover {
+            opacity: 0.8;
+        }
+
+        .window-control.close {
+            background: #ff5f56;
+        }
+
+        .window-control.minimize {
+            background: #ffbd2e;
+        }
+
+        .window-control.maximize {
+            background: #27ca3f;
+        }
+
+        .app-content {
+            margin-top: 30px;
+            width: 100%;
+            min-height: calc(100vh - 30px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .container {
@@ -200,7 +265,17 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="drag-bar">
+        <div class="drag-bar-title">FocusRecap</div>
+        <div class="window-controls">
+            <div class="window-control close" id="closeBtn"></div>
+            <div class="window-control minimize" id="minimizeBtn"></div>
+            <div class="window-control maximize" id="maximizeBtn"></div>
+        </div>
+    </div>
+    
+    <div class="app-content">
+        <div class="container">
         <div class="header">
             <div class="logo">🎯 FocusRecap</div>
             <div class="subtitle">AI-powered productivity tracking</div>
@@ -247,12 +322,26 @@
             <button class="btn btn-secondary" id="sendEmailBtn" style="margin-top: 15px;">📧 Send In Email</button>
         </div>
     </div>
+    </div>
 
     <script>
         let isMonitoring = false;
         let settings = {};
         let countdownInterval = null;
         let remainingTime = 0;
+
+        // Window controls
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            window.electronAPI.closeWindow();
+        });
+
+        document.getElementById('minimizeBtn').addEventListener('click', () => {
+            window.electronAPI.minimizeWindow();
+        });
+
+        document.getElementById('maximizeBtn').addEventListener('click', () => {
+            window.electronAPI.maximizeWindow();
+        });
 
         // Listen for automatically generated summaries
         window.electronAPI.onSummaryGenerated((summary) => {

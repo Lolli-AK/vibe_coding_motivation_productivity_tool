@@ -81,7 +81,7 @@ class FocusRecapApp {
         contextIsolation: true,
         preload: path.join(__dirname, 'preload.js')
       },
-      titleBarStyle: 'hiddenInset',
+      frame: false,
       show: false
     });
 
@@ -238,6 +238,29 @@ class FocusRecapApp {
     ipcMain.handle('send-email-summary', async (event, summary) => {
       await this.sendEmailSummary(summary);
       return true;
+    });
+
+    // Window control handlers
+    ipcMain.handle('close-window', () => {
+      if (this.mainWindow) {
+        this.mainWindow.close();
+      }
+    });
+
+    ipcMain.handle('minimize-window', () => {
+      if (this.mainWindow) {
+        this.mainWindow.minimize();
+      }
+    });
+
+    ipcMain.handle('maximize-window', () => {
+      if (this.mainWindow) {
+        if (this.mainWindow.isMaximized()) {
+          this.mainWindow.unmaximize();
+        } else {
+          this.mainWindow.maximize();
+        }
+      }
     });
   }
 

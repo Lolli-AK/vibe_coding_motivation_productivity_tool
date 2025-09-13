@@ -332,7 +332,6 @@
                     <small style="color: #666; font-size: 14px;">AI will reference these when analyzing your work</small>
                 </div>
 
-                <button type="submit" class="btn" id="saveBtn">Save Settings</button>
             </form>
 
             <button class="btn" id="startBtn">Start Monitoring</button>
@@ -433,32 +432,6 @@
         document.getElementById('recordingMinutes').addEventListener('input', updateTotalDuration);
         document.getElementById('recordingSeconds').addEventListener('input', updateTotalDuration);
 
-        // Save settings
-        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const checklistText = document.getElementById('checklist').value;
-            const checklist = checklistText ? checklistText.split('\n').filter(item => item.trim()) : [];
-            
-            // Calculate total duration in seconds
-            const minutes = parseInt(document.getElementById('recordingMinutes').value) || 0;
-            const seconds = parseInt(document.getElementById('recordingSeconds').value) || 0;
-            const totalSeconds = minutes * 60 + seconds;
-            
-            settings = {
-                email: document.getElementById('email').value,
-                recordingDuration: totalSeconds, // Store as total seconds
-                checklist: checklist
-            };
-
-            try {
-                await window.electronAPI.saveSettings(settings);
-                showNotification('Settings saved successfully!');
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                showNotification('Error saving settings', 'error');
-            }
-        });
 
         // Start monitoring
         document.getElementById('startBtn').addEventListener('click', async () => {

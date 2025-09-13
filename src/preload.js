@@ -7,6 +7,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   startRecording: () => ipcRenderer.invoke('start-recording'),
   stopRecording: () => ipcRenderer.invoke('stop-recording'),
-  generateSummary: () => ipcRenderer.invoke('generate-summary')
+  generateSummary: () => ipcRenderer.invoke('generate-summary'),
+  sendEmailSummary: (summary) => ipcRenderer.invoke('send-email-summary', summary),
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+  minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+  maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
+  onSummaryGenerated: (callback) => {
+    ipcRenderer.on('summary-generated', (event, summary) => callback(summary));
+  }
 });
 

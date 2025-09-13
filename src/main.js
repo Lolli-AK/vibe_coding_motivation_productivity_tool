@@ -18,10 +18,10 @@ class FocusRecapApp {
     this.isCapturing = false;
     this.screenshots = [];
     this.menuBarApp = null;
+    this.recordingTimeout = null;
     this.userSettings = {
-      email: '',
       checklist: [],
-      recordingDuration: 5, // minutes
+      recordingDuration: 320, // seconds (5 minutes 20 seconds default)
       isRecording: false
     };
   }
@@ -158,11 +158,69 @@ class FocusRecapApp {
     ipcMain.removeAllListeners('generate-summary');
 
     ipcMain.handle('get-settings', async () => {
-      return this.userSettings;
+      // Load settings from database
+      return new Promise((resolve) => {
+        const settings = { ...this.userSettings };
+        
+        this.db.all('SELECT key, value FROM settings', (err, rows) => {
+          if (err) {
+            console.error('Error loading settings:', err);
+            resolve(settings);
+            return;
+          }
+          
+          console.log('Database rows found:', rows);
+          
+          rows.forEach(row => {
+            console.log('Processing row:', row.key, '=', row.value);
+            if (row.key === 'recordingDuration') {
+              settings.recordingDuration = parseInt(row.value) || 320;
+            } else if (row.key === 'checklist') {
+              try {
+                settings.checklist = JSON.parse(row.value) || [];
+              } catch (e) {
+                settings.checklist = [];
+              }
+            }
+          });
+          
+          console.log('Settings loaded from database:', settings);
+          resolve(settings);
+        });
+      });
     });
 
     ipcMain.handle('save-settings', async (event, settings) => {
       this.userSettings = { ...this.userSettings, ...settings };
+      
+      console.log('Saving settings to database:', settings);
+      
+      // Save to database
+      this.db.run(
+        'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+        ['recordingDuration', settings.recordingDuration.toString()],
+        function(err) {
+          if (err) {
+            console.error('Error saving recordingDuration:', err);
+          } else {
+            console.log('recordingDuration saved successfully');
+          }
+        }
+      );
+      
+      this.db.run(
+        'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+        ['checklist', JSON.stringify(settings.checklist)],
+        function(err) {
+          if (err) {
+            console.error('Error saving checklist:', err);
+          } else {
+            console.log('checklist saved successfully');
+          }
+        }
+      );
+      
+      console.log('Settings saved to database:', settings);
       return true;
     });
 
@@ -178,6 +236,34 @@ class FocusRecapApp {
 
     ipcMain.handle('generate-summary', async () => {
       return await this.generateSummary();
+    });
+
+    ipcMain.handle('send-email-summary', async (event, summary) => {
+      await this.sendEmailSummary(summary);
+      return true;
+    });
+
+    // Window control handlers
+    ipcMain.handle('close-window', () => {
+      if (this.mainWindow) {
+        this.mainWindow.close();
+      }
+    });
+
+    ipcMain.handle('minimize-window', () => {
+      if (this.mainWindow) {
+        this.mainWindow.minimize();
+      }
+    });
+
+    ipcMain.handle('maximize-window', () => {
+      if (this.mainWindow) {
+        if (this.mainWindow.isMaximized()) {
+          this.mainWindow.unmaximize();
+        } else {
+          this.mainWindow.maximize();
+        }
+      }
     });
   }
 
@@ -200,23 +286,53 @@ class FocusRecapApp {
       return;
     }
 
+    const recordingDurationMs = this.userSettings.recordingDuration * 1000; // Convert seconds to milliseconds
+    const screenshotInterval = 20000; // 20 seconds
+    const maxScreenshots = Math.ceil(recordingDurationMs / screenshotInterval); // Calculate max screenshots needed
+
     // Start capturing screenshots every 20 seconds
     this.screenshotInterval = setInterval(async () => {
+      console.log(`Capturing screenshot #${this.screenshots.length + 1}`);
       await this.captureScreenshot();
       
-      // Keep only last 15 screenshots (5 minutes)
-      if (this.screenshots.length > 15) {
+      // Keep only the screenshots needed for the recording duration
+      if (this.screenshots.length > maxScreenshots) {
         const oldScreenshot = this.screenshots.shift();
         await this.deleteScreenshot(oldScreenshot);
       }
       
-      // Generate summary after 5 minutes (15 screenshots)
-      if (this.screenshots.length === 15) {
-        await this.generateSummary();
+      console.log(`Total screenshots captured: ${this.screenshots.length}`);
+      
+      // Generate summary only at the end of the session (when we have enough screenshots)
+      if (this.screenshots.length === maxScreenshots) {
+        console.log('Generating final summary...');
+        const summary = await this.generateSummary();
+        // Send summary to UI
+        if (this.mainWindow && summary && !summary.error) {
+          console.log('Sending summary to UI:', summary.text.substring(0, 100) + '...');
+          this.mainWindow.webContents.send('summary-generated', summary);
+        } else {
+          console.log('Summary error or no main window:', summary);
+        }
       }
-    }, 20000);
+    }, screenshotInterval);
 
-    console.log('Screenshot capture started');
+    // Set timeout to automatically stop recording after the specified duration
+    this.recordingTimeout = setTimeout(async () => {
+      console.log(`Recording duration of ${this.userSettings.recordingDuration} seconds completed`);
+      await this.stopScreenshotCapture();
+      
+      // Generate summary with whatever screenshots we have
+      if (this.screenshots.length > 0) {
+        const summary = await this.generateSummary();
+        // Send summary to UI
+        if (this.mainWindow && summary && !summary.error) {
+          this.mainWindow.webContents.send('summary-generated', summary);
+        }
+      }
+    }, recordingDurationMs);
+
+    console.log(`Screenshot capture started for ${this.userSettings.recordingDuration} seconds`);
   }
 
   async stopScreenshotCapture() {
@@ -226,6 +342,12 @@ class FocusRecapApp {
     if (this.screenshotInterval) {
       clearInterval(this.screenshotInterval);
       this.screenshotInterval = null;
+    }
+    
+    // Clear the recording timeout if it exists
+    if (this.recordingTimeout) {
+      clearTimeout(this.recordingTimeout);
+      this.recordingTimeout = null;
     }
     
     console.log('Screenshot capture stopped');
@@ -332,7 +454,11 @@ class FocusRecapApp {
 
   async generateSummary() {
     if (this.screenshots.length === 0) {
-      return { error: 'No screenshots available for analysis' };
+      const noScreenshotsMessage = {
+        text: "No screenshots were captured during this session. This could be due to:\n\n• Screen recording permissions not granted\n• No active windows detected\n• Technical issues with screenshot capture\n\nPlease check your screen recording permissions in System Preferences > Security & Privacy > Screen Recording and try again.",
+        timestamp: new Date().toISOString()
+      };
+      return noScreenshotsMessage;
     }
 
     try {
@@ -387,6 +513,11 @@ class FocusRecapApp {
 
       const prompt = this.buildAIPrompt(screenshotData);
       
+      // Log the prompt being sent to AI
+      console.log('=== AI PROMPT BEING SENT ===');
+      console.log(prompt);
+      console.log('=== END AI PROMPT ===');
+      
       const response = await axios.post('https://api.openai.com/v1/chat/completions', {
         model: process.env.AI_MODEL || 'gpt-4o-mini',
         messages: [
@@ -434,8 +565,13 @@ class FocusRecapApp {
     const checklistLength = checklist.length;
     const sessionActivity = screenshotData.length;
     const itemsCount = Math.max(2, Math.min(5, Math.max(checklistLength, Math.floor(sessionActivity / 3))));
+    const durationMinutes = Math.floor(this.userSettings.recordingDuration / 60);
+    const durationSeconds = this.userSettings.recordingDuration % 60;
+    const durationText = durationMinutes > 0 ? 
+      `${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}${durationSeconds > 0 ? ` and ${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}` : ''}` :
+      `${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}`;
 
-    return `Analyze this ${this.userSettings.recordingDuration}-minute work session and provide a motivational summary:
+    return `Analyze this ${durationText} work session and provide a motivational summary:
 
 Screenshot data:
 ${ocrTexts}
@@ -475,8 +611,16 @@ IMPORTANT FORMATTING RULES:
     const checklist = this.userSettings.checklist || [];
     const itemsCount = Math.max(2, Math.min(5, Math.max(checklist.length, Math.floor(screenshotData.length / 3))));
     
-    let summary = `**Accomplishments:**\n`;
-    summary += `You successfully engaged in ${activities} during this ${this.userSettings.recordingDuration}-minute session. Your consistent focus and productivity demonstrate strong work habits and dedication to your goals.\n\n`;
+    // Dynamic duration text
+    const durationMinutes = Math.floor(this.userSettings.recordingDuration / 60);
+    const durationSeconds = this.userSettings.recordingDuration % 60;
+    const durationText = durationMinutes > 0 ? 
+      `${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}${durationSeconds > 0 ? ` and ${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}` : ''}` :
+      `${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}`;
+    
+    let summary = `**Accomplishments:**\n`;`Based on your ${durationText} work session, here's what I observed:\n\n`;
+    
+    summary += `What you did: ${activities}\n\n`;
     
     summary += `**What Went Well:**\n`;
     const positiveEmojis = ['✅', '🎯', '💪', '🔥', '⭐', '🚀', '💯', '🎉', '👏', '🌟'];
@@ -562,41 +706,22 @@ IMPORTANT FORMATTING RULES:
 
   async sendEmailSummary(summary) {
     try {
-      if (!this.userSettings.email || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.log('Email not configured, skipping email send');
-        return;
-      }
+      // Create email content
+      const subject = `FocusRecap Summary - ${new Date().toLocaleDateString()}`;
+      const body = `🎯 FocusRecap Summary
 
-      const transporter = nodemailer.createTransporter({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: process.env.SMTP_PORT || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        }
-      });
+${summary.text}
 
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: this.userSettings.email,
-        subject: `FocusRecap Summary - ${new Date().toLocaleDateString()}`,
-        text: summary.text,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #667eea;">🎯 FocusRecap Summary</h2>
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
-              <pre style="white-space: pre-wrap; font-family: Arial, sans-serif;">${summary.text}</pre>
-            </div>
-            <p style="color: #666; font-size: 14px;">
-              Generated on ${new Date().toLocaleString()}
-            </p>
-          </div>
-        `
-      };
+---
+Generated on ${new Date().toLocaleString()}
+FocusRecap - AI-Powered Productivity Tracking`;
 
-      await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully');
+      // Create mailto URL (no pre-configured recipient)
+      const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      
+      // Open default email client
+      await shell.openExternal(mailtoUrl);
+      console.log('Email client opened with pre-filled summary');
       
       // Update database to mark email as sent
       this.db.run(
@@ -604,7 +729,7 @@ IMPORTANT FORMATTING RULES:
         [summary.timestamp]
       );
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error opening email client:', error);
     }
   }
 

@@ -252,11 +252,27 @@
             white-space: pre-line;
         }
 
+
+        .summary-text strong {
+            color: #667eea;
+            font-size: 1.1em;
+            display: block;
+            margin: 15px 0 8px 0;
+        }
+
+        .summary-text strong:first-child {
+            margin-top: 0;
+        }
+
+        .hidden {
+            display: none;
+          
         .timestamp {
             color: #888;
             font-size: 0.9rem;
             margin-top: 15px;
             text-align: center;
+
         }
 
         .loading-spinner {
@@ -562,6 +578,32 @@
         function startCountdown() {
             const timerElement = document.getElementById('countdownTimer');
             
+            // Convert markdown-style formatting to HTML
+            const htmlText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold headers
+                .replace(/\n/g, '<br>') // Line breaks
+                .replace(/✅/g, '✅')
+                .replace(/🎯/g, '🎯')
+                .replace(/💪/g, '💪')
+                .replace(/🔥/g, '🔥')
+                .replace(/⭐/g, '⭐')
+                .replace(/🚀/g, '🚀')
+                .replace(/💯/g, '💯')
+                .replace(/🎉/g, '🎉')
+                .replace(/👏/g, '👏')
+                .replace(/🌟/g, '🌟')
+                .replace(/🔍/g, '🔍')
+                .replace(/✏️/g, '✏️')
+                .replace(/⏱️/g, '⏱️')
+                .replace(/📝/g, '📝')
+                .replace(/💡/g, '💡')
+                .replace(/🔄/g, '🔄')
+                .replace(/📊/g, '📊')
+                .replace(/⚡/g, '⚡')
+                .replace(/🎪/g, '🎪');
+            
+            textElement.innerHTML = htmlText;
+            container.classList.add('show');
             countdownInterval = setInterval(() => {
                 remainingTime--;
                 const minutes = Math.floor(remainingTime / 60);

@@ -18,10 +18,11 @@ class FocusRecapApp {
     this.isCapturing = false;
     this.screenshots = [];
     this.menuBarApp = null;
+    this.recordingTimeout = null;
     this.userSettings = {
       email: '',
       checklist: [],
-      recordingDuration: 5, // minutes
+      recordingDuration: 300, // seconds (5 minutes default)
       isRecording: false
     };
   }
@@ -197,23 +198,38 @@ class FocusRecapApp {
       return;
     }
 
+    const recordingDurationMs = this.userSettings.recordingDuration * 1000; // Convert seconds to milliseconds
+    const screenshotInterval = 20000; // 20 seconds
+    const maxScreenshots = Math.ceil(recordingDurationMs / screenshotInterval); // Calculate max screenshots needed
+
     // Start capturing screenshots every 20 seconds
     this.screenshotInterval = setInterval(async () => {
       await this.captureScreenshot();
       
-      // Keep only last 15 screenshots (5 minutes)
-      if (this.screenshots.length > 15) {
+      // Keep only the screenshots needed for the recording duration
+      if (this.screenshots.length > maxScreenshots) {
         const oldScreenshot = this.screenshots.shift();
         await this.deleteScreenshot(oldScreenshot);
       }
       
-      // Generate summary after 5 minutes (15 screenshots)
-      if (this.screenshots.length === 15) {
+      // Generate summary when we have enough screenshots for the duration
+      if (this.screenshots.length === maxScreenshots) {
         await this.generateSummary();
       }
-    }, 20000);
+    }, screenshotInterval);
 
-    console.log('Screenshot capture started');
+    // Set timeout to automatically stop recording after the specified duration
+    this.recordingTimeout = setTimeout(async () => {
+      console.log(`Recording duration of ${this.userSettings.recordingDuration} seconds completed`);
+      await this.stopScreenshotCapture();
+      
+      // Generate summary with whatever screenshots we have
+      if (this.screenshots.length > 0) {
+        await this.generateSummary();
+      }
+    }, recordingDurationMs);
+
+    console.log(`Screenshot capture started for ${this.userSettings.recordingDuration} seconds`);
   }
 
   async stopScreenshotCapture() {
@@ -223,6 +239,12 @@ class FocusRecapApp {
     if (this.screenshotInterval) {
       clearInterval(this.screenshotInterval);
       this.screenshotInterval = null;
+    }
+    
+    // Clear the recording timeout if it exists
+    if (this.recordingTimeout) {
+      clearTimeout(this.recordingTimeout);
+      this.recordingTimeout = null;
     }
     
     console.log('Screenshot capture stopped');
@@ -384,6 +406,11 @@ class FocusRecapApp {
 
       const prompt = this.buildAIPrompt(screenshotData);
       
+      // Log the prompt being sent to AI
+      console.log('=== AI PROMPT BEING SENT ===');
+      console.log(prompt);
+      console.log('=== END AI PROMPT ===');
+      
       const response = await axios.post('https://api.openai.com/v1/chat/completions', {
         model: process.env.AI_MODEL || 'gpt-3.5-turbo',
         messages: [
@@ -427,7 +454,13 @@ class FocusRecapApp {
       `Time: ${data.timestamp}\nText: ${data.ocrText}`
     ).join('\n\n');
 
-    return `Analyze this 5-minute work session and provide a motivational summary:
+    const durationMinutes = Math.floor(this.userSettings.recordingDuration / 60);
+    const durationSeconds = this.userSettings.recordingDuration % 60;
+    const durationText = durationMinutes > 0 ? 
+      `${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}${durationSeconds > 0 ? ` and ${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}` : ''}` :
+      `${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}`;
+
+    return `Analyze this ${durationText} work session and provide a motivational summary:
 
 Screenshot data:
 ${ocrTexts}
@@ -446,7 +479,14 @@ Keep it concise, encouraging, and actionable. Focus on productivity patterns and
     const activities = this.extractActivities(screenshotData);
     const checklist = this.userSettings.checklist || [];
     
-    let summary = `Based on your 5-minute work session, here's what I observed:\n\n`;
+    // Dynamic duration text
+    const durationMinutes = Math.floor(this.userSettings.recordingDuration / 60);
+    const durationSeconds = this.userSettings.recordingDuration % 60;
+    const durationText = durationMinutes > 0 ? 
+      `${durationMinutes} minute${durationMinutes !== 1 ? 's' : ''}${durationSeconds > 0 ? ` and ${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}` : ''}` :
+      `${durationSeconds} second${durationSeconds !== 1 ? 's' : ''}`;
+    
+    let summary = `Based on your ${durationText} work session, here's what I observed:\n\n`;
     
     summary += `What you did: ${activities}\n\n`;
     

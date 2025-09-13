@@ -1,142 +1,164 @@
 # FocusRecap - AI-Powered Productivity Tracking
 
 ## Overview
-FocusRecap is a macOS application that automatically captures screenshots of your work every 20 seconds, analyzes them with AI, and provides motivational summaries to help you track and improve your productivity.
+FocusRecap is a macOS application that automatically captures screenshots of your work every 20 seconds, analyzes them with AI, and provides motivational summaries to help you track and improve your productivity. Features a beautiful three-page navigation system with confetti celebrations!
 
-## Features
-- **Automatic Screenshot Capture**: Takes screenshots every 20 seconds of your active window
+## ✨ Features
+
+### 🎯 Three-Page Navigation System
+- **Settings Page**: Configure timer duration and daily goals
+- **Monitoring Page**: Real-time countdown timer with progress tracking
+- **Summary Page**: AI-generated insights with celebration animations
+
+### 🎊 Celebration Features
+- **Confetti animations** when sessions complete
+- **Motivational messages** for different completion scenarios
+- **Beautiful UI** with smooth page transitions
+
+### 🔧 Core Functionality
+- **Automatic Screenshot Capture**: Takes screenshots every 20 seconds
 - **AI Analysis**: Uses OCR and AI to analyze your work patterns
 - **Motivational Summaries**: Provides personalized feedback and encouragement
-- **Email Integration**: Optional email delivery of summaries
 - **Privacy-First**: All data stored locally, screenshots auto-deleted after analysis
 - **Customizable Goals**: Set daily checklists for AI to reference
 
-## Installation
+### 🖱️ Enhanced UI
+- **Custom drag bar** with window controls (close, minimize, maximize)
+- **Frameless window** with modern design
+- **Responsive layout** that adapts to different screen sizes
+- **Loading states** and smooth animations
 
-### Prerequisites
+## 🚀 Installation
+
+### Quick Setup
+```bash
+# Make install script executable and run it
+chmod +x install.sh
+./install.sh
+```
+
+### Manual Installation
+
+#### Prerequisites
 - macOS 10.15 or later
 - Node.js 16+ and npm
 - Screen Recording permission (granted during first run)
 
-### Development Setup
+#### Steps
 1. Clone the repository
 2. Install dependencies:
    ```bash
    npm install
    ```
-3. Run in development mode:
+3. Start the app:
    ```bash
-   npm run dev
+   npm start
    ```
 
-### Building for Production
-```bash
-npm run build
-```
-
-## Usage
+## 📱 Usage
 
 ### First Time Setup
 1. Launch FocusRecap
-2. Enter your email address (optional)
-3. Set recording duration (default: 5 minutes)
-4. Add daily goals/checklist (optional)
-5. Click "Start Recording"
+2. Set recording duration (minutes and seconds)
+3. Add daily goals/checklist (optional)
+4. Click "Start Monitoring"
 
 ### How It Works
-1. **Screenshot Capture**: App captures your active window every 20 seconds
-2. **Storage**: Screenshots stored locally for 5 minutes (15 screenshots)
-3. **AI Analysis**: After 5 minutes, AI analyzes all screenshots
-4. **Summary Generation**: Creates personalized summary with:
-   - What you accomplished
-   - What went well
-   - Improvement suggestions
-   - Motivational message
-5. **Delivery**: Summary shown in-app and optionally emailed
-6. **Cleanup**: Screenshots automatically deleted after analysis
+1. **Settings Page**: Configure your session duration and goals
+2. **Monitoring Page**: Watch the countdown timer as screenshots are captured
+3. **Summary Page**: View AI-generated insights with confetti celebration
 
-### Privacy & Security
-- All screenshots stored locally on your device
-- Screenshots automatically deleted after analysis
-- No data sent to external servers without explicit consent
-- Full control over what gets captured and analyzed
+### Navigation
+- **Drag the window** using the black bar at the top
+- **Window controls** on the left: red (close), yellow (minimize), green (maximize)
+- **Automatic transitions** between pages during monitoring
+- **Return to main** button on summary page
 
-## Technical Details
+## 🎯 App Flow
 
-### Architecture
-- **Frontend**: Electron renderer process with HTML/CSS/JavaScript
-- **Backend**: Electron main process with Node.js
-- **Database**: SQLite for local storage
-- **OCR**: Tesseract.js for text extraction
-- **AI**: Integration with OpenAI API (configurable)
-- **Email**: Nodemailer for email delivery
-
-### File Structure
 ```
-src/
-├── main.js              # Electron main process
-├── preload.js           # Preload script for secure IPC
-└── renderer/
-    └── index.html       # Main UI
-
-data/
-├── focusrecap.db        # SQLite database
-└── screenshots/         # Temporary screenshot storage
-
-assets/
-└── icon.icns           # App icon
+Settings Page → Start Monitoring → Monitoring Page → Summary Page → Return to Main
+     ↓              ↓                    ↓               ↓              ↓
+  Configure      Auto-save         Countdown        AI Analysis    Back to start
+   timer &       settings          & screenshots    & confetti     for next session
+   goals         & start           every 20s        celebration
 ```
 
-### Permissions Required
-- **Screen Recording**: Required for screenshot capture
-- **File System**: For storing screenshots and database
-- **Network**: For AI API calls and email (optional)
-
-## Configuration
+## 🔧 Configuration
 
 ### Environment Variables
-Create a `.env` file in the project root:
-```
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-OPENAI_API_KEY=your-openai-api-key
+Create a `.env` file (copy from `env.example`):
+```bash
+# Optional: For AI-powered summaries
+OPENAI_API_KEY=your_openai_api_key_here
+AI_MODEL=gpt-3.5-turbo
+
+# Optional: For email summaries
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
 ```
 
 ### Settings
-- Recording duration (1-60 minutes)
-- Email notifications (on/off)
-- Daily goals/checklist
-- AI analysis preferences
+- **Recording Duration**: Set custom timer (minutes + seconds)
+- **Daily Goals**: Add tasks for AI to reference in summaries
+- **Privacy**: All data stays on your device
 
-## Troubleshooting
+## 🎊 Celebrations
 
-### Common Issues
-1. **Permission Denied**: Grant Screen Recording permission in System Preferences
-2. **Screenshots Not Captured**: Check if another app is blocking screen recording
-3. **AI Analysis Fails**: Verify API key and internet connection
-4. **Email Not Sent**: Check email credentials and SMTP settings
+The app celebrates your productivity achievements with:
+- **🎉 Session Complete!** - When auto-generated summary is ready
+- **🎉 Great Work!** - When you manually stop monitoring
+- **🎯 Time's Up! Great Job!** - When timer automatically completes
 
-### Debug Mode
-Run with debug logging:
+## 🛠️ Development
+
+### Available Scripts
 ```bash
-npm run dev -- --debug
+npm start      # Production mode
+npm run dev    # Development mode
+npm run build  # Build for distribution
+npm run dist   # Create distributable package
 ```
 
-## Contributing
+### Project Structure
+```
+src/
+├── main.js              # Main Electron process
+├── preload.js           # IPC bridge
+├── menuBar.js           # Menu bar functionality
+└── renderer/
+    └── index.html       # Three-page UI with confetti
+```
+
+## 🔒 Privacy & Security
+
+- **Local Storage**: All screenshots stored locally on your device
+- **Auto-Cleanup**: Screenshots automatically deleted after analysis
+- **No Cloud**: No data sent to external servers without your consent
+- **Permissions**: Only requires Screen Recording permission
+
+## 🎯 Tips for Best Results
+
+1. **Set Clear Goals**: Add specific tasks to your daily checklist
+2. **Consistent Sessions**: Use the same duration for comparable results
+3. **Review Summaries**: Use insights to improve your productivity patterns
+4. **Celebrate Wins**: Enjoy the confetti celebrations as motivation!
+
+## 🤝 Contributing
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
 
-## License
+## 📄 License
+
 MIT License - see LICENSE file for details
 
-## Roadmap
-- [ ] Menu bar integration
-- [ ] Sensitive app detection
-- [ ] Dashboard with analytics
-- [ ] Offline mode
-- [ ] Team collaboration features
-- [ ] Mobile companion app
+## 🎯 Happy Productivity Tracking!
 
+FocusRecap helps you stay motivated and track your progress with beautiful UI, AI insights, and celebration animations. Start monitoring your productivity today!

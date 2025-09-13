@@ -86,13 +86,19 @@
             justify-content: center;
         }
 
-        .container {
+        .page {
+            display: none;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             padding: 40px;
             max-width: 500px;
             width: 90%;
+            text-align: center;
+        }
+
+        .page.active {
+            display: block;
         }
 
         .header {
@@ -144,17 +150,6 @@
             min-height: 100px;
         }
 
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        input[type="checkbox"] {
-            margin-right: 10px;
-            transform: scale(1.2);
-        }
-
         .btn {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
@@ -185,67 +180,9 @@
             border: 2px solid #e1e5e9;
         }
 
-        .status {
-            text-align: center;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .status.monitoring {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status.stopped {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .summary-container {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .summary-container.show {
-            display: block;
-        }
-
-        .summary-text {
-            line-height: 1.6;
-            white-space: pre-line;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .countdown {
-            text-align: center;
-            padding: 15px;
-            background: #e3f2fd;
-            border: 1px solid #bbdefb;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .countdown-text {
-            font-size: 14px;
-            color: #1565c0;
-            margin-bottom: 5px;
-        }
-
-        .countdown-timer {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1565c0;
-            font-family: 'Courier New', monospace;
+        .btn-secondary:hover {
+            background: #e9ecef;
+            border-color: #667eea;
         }
 
         .privacy-notice {
@@ -262,66 +199,176 @@
             display: block;
             margin-bottom: 5px;
         }
+
+        .countdown-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .countdown-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .countdown-timer {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+        }
+
+        .countdown-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .summary-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+            text-align: left;
+        }
+
+        .summary-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .summary-content {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: #555;
+            white-space: pre-line;
+        }
+
+        .timestamp {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #666;
+            font-size: 1.1rem;
+            margin-top: 15px;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="drag-bar">
-        <div class="drag-bar-title">FocusRecap</div>
         <div class="window-controls">
             <div class="window-control close" id="closeBtn"></div>
             <div class="window-control minimize" id="minimizeBtn"></div>
             <div class="window-control maximize" id="maximizeBtn"></div>
         </div>
+        <div class="drag-bar-title">FocusRecap</div>
     </div>
     
     <div class="app-content">
-        <div class="container">
-        <div class="header">
-            <div class="logo">🎯 FocusRecap</div>
-            <div class="subtitle">AI-powered productivity tracking</div>
-        </div>
-
-        <div class="privacy-notice">
-            <strong>🔒 Privacy First</strong>
-            Screenshots are stored locally and automatically deleted after analysis. No data is sent to external servers without your consent.
-        </div>
-
-        <div class="form-group">
-            <label for="recordingDuration">Monitoring Duration</label>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="number" id="recordingMinutes" min="0" max="60" value="5" style="flex: 1;" />
-                <span>minutes</span>
-                <input type="number" id="recordingSeconds" min="0" max="59" value="20" style="flex: 1;" />
-                <span>seconds</span>
+        <!-- Page 1: Settings -->
+        <div class="page active" id="settingsPage">
+            <div class="header">
+                <div class="logo">🎯 FocusRecap</div>
+                <div class="subtitle">AI-powered productivity tracking</div>
             </div>
-            <small style="color: #666; font-size: 14px;">Total duration: <span id="totalDuration">5:20</span></small>
+
+            <div class="privacy-notice">
+                <strong>🔒 Privacy First</strong>
+                Screenshots are stored locally and automatically deleted after analysis. No data is sent to external servers without your consent.
+            </div>
+
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="email">Email Address (Optional)</label>
+                    <input type="email" id="email" placeholder="your@email.com" />
+                    <small style="color: #666; font-size: 14px;">Leave empty to view summaries in-app only</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="recordingDuration">Recording Duration</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="recordingMinutes" min="0" max="60" value="5" style="flex: 1;" />
+                        <span>minutes</span>
+                        <input type="number" id="recordingSeconds" min="0" max="59" value="0" style="flex: 1;" />
+                        <span>seconds</span>
+                    </div>
+                    <small style="color: #666; font-size: 14px;">Total duration: <span id="totalDuration">5:00</span></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="checklist">Daily Goals/Checklist (Optional)</label>
+                    <textarea id="checklist" placeholder="Enter your daily goals or tasks, one per line..."></textarea>
+                    <small style="color: #666; font-size: 14px;">AI will reference these when analyzing your work</small>
+                </div>
+
+                <button type="submit" class="btn" id="saveBtn">Save Settings</button>
+            </form>
+
+            <button class="btn" id="startBtn">Start Monitoring</button>
         </div>
 
-        <div class="form-group">
-            <label for="checklist">Daily Goals/Checklist (Optional)</label>
-            <textarea id="checklist" placeholder="Enter your daily goals or tasks, one per line..."></textarea>
-            <small style="color: #666; font-size: 14px;">AI will reference these when analyzing your work</small>
+        <!-- Page 2: Monitoring -->
+        <div class="page" id="monitoringPage">
+            <div class="header">
+                <div class="logo">📊 Monitoring</div>
+                <div class="subtitle">Capturing your productivity</div>
+            </div>
+
+            <div class="countdown-container">
+                <div class="countdown-title">Time Remaining</div>
+                <div class="countdown-timer" id="countdownTimer">5:00</div>
+                <div class="countdown-subtitle">Screenshots captured every 20 seconds</div>
+            </div>
+
+            <button class="btn" id="stopBtn">Stop Monitoring</button>
         </div>
 
-        <div class="status stopped" id="status">
-            Ready to start monitoring
-        </div>
-        
-        <div class="countdown" id="countdown" style="display: none;">
-            <div class="countdown-text">Monitoring will stop in:</div>
-            <div class="countdown-timer" id="countdownTimer">5:00</div>
-        </div>
+        <!-- Page 3: Summary -->
+        <div class="page" id="summaryPage">
+            <div class="header">
+                <div class="logo">📈 Summary</div>
+                <div class="subtitle">Your productivity insights</div>
+            </div>
 
-        <button class="btn" id="startBtn">Start Monitoring</button>
-        <button class="btn btn-secondary hidden" id="stopBtn">Stop Monitoring</button>
-        <button class="btn btn-secondary hidden" id="summaryBtn">Generate Summary Now</button>
+            <div class="summary-container" id="summaryContainer">
+                <div class="summary-title">Your Productivity Summary</div>
+                <div class="summary-content" id="summaryText">Loading summary...</div>
+                <div class="timestamp" id="summaryTimestamp"></div>
+            </div>
 
-        <div class="summary-container" id="summaryContainer">
-            <h3>Latest Summary</h3>
-            <div class="summary-text" id="summaryText"></div>
-            <button class="btn btn-secondary" id="sendEmailBtn" style="margin-top: 15px;">📧 Send In Email</button>
+            <button class="btn btn-secondary" id="returnBtn">Return to Main</button>
         </div>
-    </div>
     </div>
 
     <script>
@@ -345,8 +392,7 @@
 
         // Listen for automatically generated summaries
         window.electronAPI.onSummaryGenerated((summary) => {
-            showSummary(summary.text);
-            showNotification('Summary generated automatically!');
+            showSummaryPage(summary.text, summary.timestamp);
         });
 
         // Load settings on page load
@@ -387,6 +433,33 @@
         document.getElementById('recordingMinutes').addEventListener('input', updateTotalDuration);
         document.getElementById('recordingSeconds').addEventListener('input', updateTotalDuration);
 
+        // Save settings
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const checklistText = document.getElementById('checklist').value;
+            const checklist = checklistText ? checklistText.split('\n').filter(item => item.trim()) : [];
+            
+            // Calculate total duration in seconds
+            const minutes = parseInt(document.getElementById('recordingMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('recordingSeconds').value) || 0;
+            const totalSeconds = minutes * 60 + seconds;
+            
+            settings = {
+                email: document.getElementById('email').value,
+                recordingDuration: totalSeconds, // Store as total seconds
+                checklist: checklist
+            };
+
+            try {
+                await window.electronAPI.saveSettings(settings);
+                showNotification('Settings saved successfully!');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showNotification('Error saving settings', 'error');
+            }
+        });
+
         // Start monitoring
         document.getElementById('startBtn').addEventListener('click', async () => {
             try {
@@ -414,8 +487,8 @@
                 await window.electronAPI.startRecording();
                 isMonitoring = true;
                 remainingTime = settings.recordingDuration; // Already in seconds
+                showMonitoringPage();
                 startCountdown();
-                updateUI();
                 showNotification('Monitoring started! Screenshots will be captured every 20 seconds.');
             } catch (error) {
                 console.error('Error starting monitoring:', error);
@@ -426,22 +499,68 @@
         // Stop monitoring
         document.getElementById('stopBtn').addEventListener('click', async () => {
             try {
+                // Show loading state
+                const stopBtn = document.getElementById('stopBtn');
+                const originalText = stopBtn.textContent;
+                stopBtn.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">Generating Summary...</div>';
+                stopBtn.disabled = true;
+                
                 await window.electronAPI.stopRecording();
                 isMonitoring = false;
                 stopCountdown();
-                updateUI();
-                showNotification('Monitoring stopped.');
+                
+                // Generate summary
+                const summary = await window.electronAPI.generateSummary();
+                
+                // Restore button state
+                stopBtn.textContent = originalText;
+                stopBtn.disabled = false;
+                
+                if (summary.error) {
+                    showNotification(summary.error, 'error');
+                    showSettingsPage();
+                } else {
+                    showSummaryPage(summary.text, summary.timestamp);
+                    showNotification('Summary generated successfully!');
+                }
             } catch (error) {
                 console.error('Error stopping monitoring:', error);
-                showNotification('Error stopping monitoring', 'error');
+                showNotification('Error generating summary', 'error');
+                showSettingsPage();
             }
         });
 
+        // Return to main
+        document.getElementById('returnBtn').addEventListener('click', () => {
+            showSettingsPage();
+        });
+
+        function showSettingsPage() {
+            hideAllPages();
+            document.getElementById('settingsPage').classList.add('active');
+        }
+
+        function showMonitoringPage() {
+            hideAllPages();
+            document.getElementById('monitoringPage').classList.add('active');
+        }
+
+        function showSummaryPage(summaryText, timestamp) {
+            hideAllPages();
+            document.getElementById('summaryText').textContent = summaryText;
+            document.getElementById('summaryTimestamp').textContent = 
+                `Generated on ${new Date(timestamp).toLocaleString()}`;
+            document.getElementById('summaryPage').classList.add('active');
+        }
+
+        function hideAllPages() {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+        }
+
         function startCountdown() {
-            const countdownElement = document.getElementById('countdown');
             const timerElement = document.getElementById('countdownTimer');
-            
-            countdownElement.style.display = 'block';
             
             countdownInterval = setInterval(() => {
                 remainingTime--;
@@ -451,7 +570,8 @@
                 
                 if (remainingTime <= 0) {
                     stopCountdown();
-                    countdownElement.style.display = 'none';
+                    // Auto-generate summary when time runs out
+                    autoGenerateSummary();
                 }
             }, 1000);
         }
@@ -461,85 +581,23 @@
                 clearInterval(countdownInterval);
                 countdownInterval = null;
             }
-            const countdownElement = document.getElementById('countdown');
-            countdownElement.style.display = 'none';
         }
 
-        // Generate summary
-        document.getElementById('summaryBtn').addEventListener('click', async () => {
+        async function autoGenerateSummary() {
             try {
-                // Show loading state
-                const summaryBtn = document.getElementById('summaryBtn');
-                const originalText = summaryBtn.textContent;
-                summaryBtn.textContent = '⏳ Generating Summary...';
-                summaryBtn.disabled = true;
-                
                 const summary = await window.electronAPI.generateSummary();
-                
-                // Restore button state
-                summaryBtn.textContent = originalText;
-                summaryBtn.disabled = false;
-                
                 if (summary.error) {
                     showNotification(summary.error, 'error');
+                    showSettingsPage();
                 } else {
-                    showSummary(summary.text);
-                    showNotification('Summary generated successfully!');
+                    showSummaryPage(summary.text, summary.timestamp);
+                    showNotification('Summary generated automatically!');
                 }
             } catch (error) {
-                // Restore button state on error
-                const summaryBtn = document.getElementById('summaryBtn');
-                summaryBtn.textContent = 'Generate Summary Now';
-                summaryBtn.disabled = false;
-                
                 console.error('Error generating summary:', error);
                 showNotification('Error generating summary', 'error');
+                showSettingsPage();
             }
-        });
-
-        // Send email
-        document.getElementById('sendEmailBtn').addEventListener('click', async () => {
-            try {
-                const summary = await window.electronAPI.generateSummary();
-                if (summary.error) {
-                    showNotification(summary.error, 'error');
-                } else {
-                    await window.electronAPI.sendEmailSummary(summary);
-                    showNotification('Email client opened with summary!');
-                }
-            } catch (error) {
-                console.error('Error sending email:', error);
-                showNotification('Error opening email client', 'error');
-            }
-        });
-
-        function updateUI() {
-            const status = document.getElementById('status');
-            const startBtn = document.getElementById('startBtn');
-            const stopBtn = document.getElementById('stopBtn');
-            const summaryBtn = document.getElementById('summaryBtn');
-
-            if (isMonitoring) {
-                status.textContent = 'Monitoring in progress...';
-                status.className = 'status monitoring';
-                startBtn.classList.add('hidden');
-                stopBtn.classList.remove('hidden');
-                summaryBtn.classList.remove('hidden');
-            } else {
-                status.textContent = 'Ready to start monitoring';
-                status.className = 'status stopped';
-                startBtn.classList.remove('hidden');
-                stopBtn.classList.add('hidden');
-                summaryBtn.classList.add('hidden');
-            }
-        }
-
-        function showSummary(text) {
-            const container = document.getElementById('summaryContainer');
-            const textElement = document.getElementById('summaryText');
-            
-            textElement.textContent = text;
-            container.classList.add('show');
         }
 
         function showNotification(message, type = 'success') {
@@ -547,7 +605,7 @@
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed;
-                top: 20px;
+                top: 50px;
                 right: 20px;
                 background: ${type === 'error' ? '#f8d7da' : '#d4edda'};
                 color: ${type === 'error' ? '#721c24' : '#155724'};
@@ -568,4 +626,3 @@
     </script>
 </body>
 </html>
-

@@ -161,6 +161,28 @@
             display: none;
         }
 
+        .countdown {
+            text-align: center;
+            padding: 15px;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .countdown-text {
+            font-size: 14px;
+            color: #1565c0;
+            margin-bottom: 5px;
+        }
+
+        .countdown-timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1565c0;
+            font-family: 'Courier New', monospace;
+        }
+
         .privacy-notice {
             background: #e3f2fd;
             border: 1px solid #bbdefb;
@@ -197,8 +219,14 @@
             </div>
 
             <div class="form-group">
-                <label for="recordingDuration">Recording Duration (minutes)</label>
-                <input type="number" id="recordingDuration" min="1" max="60" value="5" />
+                <label for="recordingDuration">Recording Duration</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="number" id="recordingMinutes" min="0" max="60" value="5" style="flex: 1;" />
+                    <span>minutes</span>
+                    <input type="number" id="recordingSeconds" min="0" max="59" value="0" style="flex: 1;" />
+                    <span>seconds</span>
+                </div>
+                <small style="color: #666; font-size: 14px;">Total duration: <span id="totalDuration">5:00</span></small>
             </div>
 
             <div class="form-group">
@@ -212,6 +240,11 @@
 
         <div class="status stopped" id="status">
             Ready to start recording
+        </div>
+        
+        <div class="countdown" id="countdown" style="display: none;">
+            <div class="countdown-text">Recording will stop in:</div>
+            <div class="countdown-timer" id="countdownTimer">5:00</div>
         </div>
 
         <button class="btn" id="startBtn">Start Recording</button>
@@ -227,18 +260,45 @@
     <script>
         let isRecording = false;
         let settings = {};
+        let countdownInterval = null;
+        let remainingTime = 0;
 
         // Load settings on page load
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 settings = await window.electronAPI.getSettings();
                 document.getElementById('email').value = settings.email || '';
-                document.getElementById('recordingDuration').value = settings.recordingDuration || 5;
+                
+                // Handle both minutes and seconds
+                const totalSeconds = (settings.recordingDuration || 5) * 60;
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                
+                document.getElementById('recordingMinutes').value = minutes;
+                document.getElementById('recordingSeconds').value = seconds;
+                updateTotalDuration();
+                
                 document.getElementById('checklist').value = settings.checklist ? settings.checklist.join('\n') : '';
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
         });
+
+        // Update total duration display
+        function updateTotalDuration() {
+            const minutes = parseInt(document.getElementById('recordingMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('recordingSeconds').value) || 0;
+            const totalSeconds = minutes * 60 + seconds;
+            const displayMinutes = Math.floor(totalSeconds / 60);
+            const displaySeconds = totalSeconds % 60;
+            
+            document.getElementById('totalDuration').textContent = 
+                `${displayMinutes}:${displaySeconds.toString().padStart(2, '0')}`;
+        }
+
+        // Add event listeners for duration inputs
+        document.getElementById('recordingMinutes').addEventListener('input', updateTotalDuration);
+        document.getElementById('recordingSeconds').addEventListener('input', updateTotalDuration);
 
         // Save settings
         document.getElementById('settingsForm').addEventListener('submit', async (e) => {
@@ -247,9 +307,14 @@
             const checklistText = document.getElementById('checklist').value;
             const checklist = checklistText ? checklistText.split('\n').filter(item => item.trim()) : [];
             
+            // Calculate total duration in seconds
+            const minutes = parseInt(document.getElementById('recordingMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('recordingSeconds').value) || 0;
+            const totalSeconds = minutes * 60 + seconds;
+            
             settings = {
                 email: document.getElementById('email').value,
-                recordingDuration: parseInt(document.getElementById('recordingDuration').value),
+                recordingDuration: totalSeconds, // Store as total seconds
                 checklist: checklist
             };
 
@@ -267,6 +332,8 @@
             try {
                 await window.electronAPI.startRecording();
                 isRecording = true;
+                remainingTime = settings.recordingDuration; // Already in seconds
+                startCountdown();
                 updateUI();
                 showNotification('Recording started! Screenshots will be captured every 20 seconds.');
             } catch (error) {
@@ -280,6 +347,7 @@
             try {
                 await window.electronAPI.stopRecording();
                 isRecording = false;
+                stopCountdown();
                 updateUI();
                 showNotification('Recording stopped.');
             } catch (error) {
@@ -287,6 +355,34 @@
                 showNotification('Error stopping recording', 'error');
             }
         });
+
+        function startCountdown() {
+            const countdownElement = document.getElementById('countdown');
+            const timerElement = document.getElementById('countdownTimer');
+            
+            countdownElement.style.display = 'block';
+            
+            countdownInterval = setInterval(() => {
+                remainingTime--;
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (remainingTime <= 0) {
+                    stopCountdown();
+                    countdownElement.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            const countdownElement = document.getElementById('countdown');
+            countdownElement.style.display = 'none';
+        }
 
         // Generate summary
         document.getElementById('summaryBtn').addEventListener('click', async () => {

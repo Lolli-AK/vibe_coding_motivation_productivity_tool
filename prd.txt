@@ -1,0 +1,187 @@
+PRD – FocusRecap App
+1. Overview
+Product Name: FocusRecap
+Goal: Help individuals track and reflect on their work by automatically capturing screenshots, analyzing activity with AI, and delivering motivational summaries.
+Primary Value: Converts fragmented work sessions into clear, timestamped recaps with improvement tips and encouragement.
+
+2. Problem Statement
+Employees and students often struggle to remember what they accomplished during the day.
+
+
+Lack of reflection leads to low motivation and missed opportunities for improvement.
+
+
+Existing productivity tools rely on manual input; few offer automated, AI-driven feedback.
+
+
+
+3. Objectives & Success Metrics
+Objectives:
+Provide users with automatic 5-minute recaps of their work.
+
+
+Motivate users with personalized feedback and encouragement.
+
+
+Offer optional integration of user “standards” (checklists/goals) into AI analysis.
+
+
+Success Metrics (MVP):
+% of users completing onboarding successfully.
+
+
+Avg. number of recaps generated per day per user.
+
+
+% of users who return after Day 1, Day 7.
+
+
+Qualitative: user reports increased clarity/motivation.
+
+
+
+4. Target Users
+Primary: Knowledge workers, students, freelancers.
+
+
+Secondary: Productivity enthusiasts, people with ADHD or focus challenges.
+
+
+
+5. Features
+Core (MVP)
+Based in a web app that includes places for the user to input a checklist and click a button if they want to send an email to themselves
+Screenshot Capture
+
+
+Captures the active window every 20 seconds.
+
+
+Stores 15 screenshots (5 minutes) in local storage.
+
+
+Auto-deletes screenshots after summary is generated.
+
+
+AI Summarization
+
+
+Analyzes screenshots (OCR text + app/window titles).
+
+
+Generates 2–3 sentences:
+
+
+What you did (summary with timestamps).
+
+
+What went well (positive reinforcement).
+
+
+What to improve (1–2 actionable suggestions).
+
+
+Motivational Output
+
+
+Adds 1-sentence motivational closer.
+
+
+Email Delivery
+
+
+Sends summary to user’s chosen email.
+
+
+User Standards (Optional)
+
+
+Input checklist/goals during onboarding.
+
+
+AI compares recap to standards and highlights gaps.
+
+
+
+Nice-to-Have (Future)
+Menu Bar Toggle: Pause/resume capture at any time.
+
+
+Sensitive App Detection: Auto-pause on password managers, banking apps.
+
+
+Redaction: Blur faces, emails, phone numbers in screenshots.
+
+
+Dashboard: Daily timeline + streaks visualization.
+
+
+Offline Mode: Local summaries without cloud AI.
+
+
+
+6. User Flow
+Onboarding:
+Welcome → explain value & privacy.
+
+
+Permissions → request Screen Recording.
+
+
+Email setup.
+
+
+Optional standards/checklist input.
+
+
+Start background capture.
+
+
+Loop (every 5 minutes):
+Capture screenshots → Analyze → Summarize → Show user the output.
+
+
+Menu Bar Controls:
+Status (“Next summary in X:XX”).
+
+
+Pause / Resume.
+
+
+Access last few summaries.
+
+
+
+7. Technical Requirements
+Platform: macOS app (Electron + Node.js).
+
+
+Capture: ScreenCaptureKit or CGDisplayStream.
+
+
+Storage: Core Data or SQLite for screenshot metadata.
+
+
+AI: OCR via Apple Vision + API call to GPT-like model.
+
+
+Email: SMTP/OAuth integration (Gmail, Outlook, etc.).
+
+
+Privacy: Local deletion after use; clear consent in onboarding.
+
+
+
+8. Constraints & Risks
+Permissions: macOS requires explicit Screen Recording permission.
+
+
+Privacy/Ethics: Must be user-initiated and transparent (avoid “surveillance” perception).
+
+
+Performance: Minimize CPU/battery usage; capture active window only.
+
+
+AI Hallucinations: Constrain prompts to timeline evidence; cite timestamps.
+
+

@@ -43,7 +43,7 @@ Get GenZ-style motivational messages that actually resonate. No corporate speak 
 - **Node.js** - JavaScript runtime for the main process
 - **SQLite** - Local database for storing settings and metadata
 - **Tesseract.js** - OCR engine for text extraction from screenshots
-- **Sharp** - High-performance image processing
+- **Sharp** - High-performance image processing <-- for future scope
 
 ### **AI & Intelligence**
 - **OpenAI GPT-4** - Advanced language model for content analysis
@@ -52,7 +52,7 @@ Get GenZ-style motivational messages that actually resonate. No corporate speak 
 
 ### **Communication & Integration**
 - **Axios** - HTTP client for API communication
-- **Nodemailer** - Email delivery system
+- **Nodemailer** - Email delivery system <-- for future scope
 - **IPC (Inter-Process Communication)** - Secure communication between Electron processes
 
 ### **Development & Build**

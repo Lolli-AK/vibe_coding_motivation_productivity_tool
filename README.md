@@ -21,7 +21,7 @@ FocusRecap solves this by becoming your **AI productivity coach** that watches y
 ## 🚀 What Makes FocusRecap Special
 
 ### 🧠 **AI-Powered Analysis**
-Unlike manual time trackers, FocusRecap uses **OpenAI's GPT** to understand what you're actually working on. It doesn't just count minutes - it analyzes your screen content and provides meaningful feedback.
+Unlike manual time trackers, FocusRecap uses **OpenAI's GPT** to understand what you're actually working on. It doesn't just count minutes - it analyzes your screen content through periodic screenshots and provides meaningful feedback.
 
 ### 🔒 **Privacy-First Design**
 Your screenshots never leave your device. Everything is processed locally, and screenshots are automatically deleted after analysis. We believe productivity tools shouldn't compromise your privacy.

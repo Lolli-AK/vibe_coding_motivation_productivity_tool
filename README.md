@@ -2,7 +2,7 @@
 
 > *Transform fragmented work sessions into clear, actionable insights with AI-powered screenshot analysis*
 
-An app that helps you increase your productivity while also keeping your spirits up. Track what you did during a certain day with an app that runs seamlessly in the background for however long you want it. At the end of a session, read some words of encouragement, some ways to improve your workflow (if you choose), and a meme to motivate you for the next work session you sit down for!
+An app that helps you increase your productivity while also keeping your spirits up. Track what you did during a certain day with an app that runs seamlessly in the background for however long you want it. At the end of a session, read some words of encouragement, and some ways to improve your workflow (if you choose).
 
 
 ## 🌟 The Problem We're Solving

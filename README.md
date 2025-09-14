@@ -219,6 +219,7 @@ We welcome contributions! Here's how to get started:
 - [ ] **Offline Mode** - Local AI processing
 - [ ] **Custom Templates** - Personalized summary formats
 - [ ] **Integration Hub** - Connect with other productivity tools
+- [ ] **Custom Meme Generation** - Why not?
 
 ## 📄 License
 
